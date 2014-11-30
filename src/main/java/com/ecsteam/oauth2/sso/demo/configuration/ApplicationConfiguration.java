@@ -46,7 +46,7 @@ public class ApplicationConfiguration {
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
 			http.authorizeRequests()
-				.antMatchers("/service/item/**").hasRole("USER")
+				.antMatchers("/service/item/**", "/home").hasRole("USER")
 				.anyRequest().permitAll()
 			.and()
 				.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
