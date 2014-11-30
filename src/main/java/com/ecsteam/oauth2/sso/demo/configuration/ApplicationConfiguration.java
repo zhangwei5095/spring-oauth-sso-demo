@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
+import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
@@ -36,11 +37,6 @@ public class ApplicationConfiguration {
 		@Autowired
 		private OAuth2ClientContextFilter oauth2ClientFilter;
 
-//		@Override
-//		public void configure(WebSecurity web) throws Exception {
-//			web.ignoring().antMatchers("/resources/**");
-//		}
-
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
@@ -52,6 +48,19 @@ public class ApplicationConfiguration {
 			.logout()
 				.logoutUrl("/logout.do").permitAll();
 			// @formatter:on
+		}
+		
+		@Bean
+		public AuthorizationCodeResourceDetails authorizationCodeResourceDetails() {
+			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
+			
+			details.setId("uaa");
+			details.setClientId("app");
+			details.setClientSecret("appclientsecret");
+			details.setAccessTokenUri("http://wv4-demo-login.cfapps.digitalglobe.com/oauth/token");
+			details.setUserAuthorizationUri("http://wv4-demo-login.cfapps.digitalglobe.com/oauth/authorize");
+			
+			return details;
 		}
 	}
 

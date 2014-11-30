@@ -8,7 +8,6 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @EnableOAuth2Sso
-@EnableOAuth2Resource
 public class UIController {
 
 	@RequestMapping("/home")
