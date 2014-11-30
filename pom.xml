@@ -6,7 +6,7 @@
 	<groupId>com.ecsteam.demo</groupId>
 	<artifactId>spring-oauth-sso</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>jar</packaging>
+	<packaging>war</packaging>
 
 	<name>spring-oauth-sso-demo</name>
 	<description>Spring OAuth2 SSO Demo</description>
