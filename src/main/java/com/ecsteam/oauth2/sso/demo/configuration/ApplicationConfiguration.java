@@ -50,10 +50,7 @@ public class ApplicationConfiguration {
 			.and()
 				.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
 			.logout()
-				.logoutUrl("/logout.do").permitAll()
-			.and()
-				.formLogin()
-					.loginPage("http://wv4-demo-login.cfapps.digitalglobe.com");
+				.logoutUrl("/logout.do").permitAll();
 			// @formatter:on
 		}
 	}
