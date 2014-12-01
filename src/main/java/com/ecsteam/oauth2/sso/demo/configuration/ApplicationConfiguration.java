@@ -22,9 +22,10 @@ import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
-import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetailsSource;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.servlet.View;
@@ -62,8 +63,11 @@ public class ApplicationConfiguration {
 			http.authorizeRequests()
 					.antMatchers("/home").hasRole("USER")
 					.and()
+						.securityContext().securityContextRepository(securityContextRepository())
+					.and()
 						.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
 						.addFilterAfter(socialClientFilter, oauth2ClientFilter.getClass())
+						
 				.authorizeRequests()
 					.antMatchers("/service/item/**").hasRole("USER")
 					.and()
@@ -75,6 +79,14 @@ public class ApplicationConfiguration {
 					.logout()
 						.logoutUrl("/logout.do").permitAll();
 			// @formatter:on
+		}
+		
+		private SecurityContextRepository securityContextRepository() {
+			HttpSessionSecurityContextRepository repo = new HttpSessionSecurityContextRepository();
+			repo.setSpringSecurityContextKey("SOCIAL_SPRING_SECURITY_CONTEXT");
+			repo.setAllowSessionCreation(true);
+			
+			return repo;
 		}
 	}
 
