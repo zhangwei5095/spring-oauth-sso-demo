@@ -2,6 +2,8 @@ package com.ecsteam.oauth2.sso.demo.configuration;
 
 import java.util.Arrays;
 
+import javax.annotation.Resource;
+
 import org.cloudfoundry.identity.uaa.client.ClientAuthenticationFilter;
 import org.cloudfoundry.identity.uaa.client.OAuth2AccessTokenSource;
 import org.cloudfoundry.identity.uaa.client.SocialClientUserDetailsSource;
@@ -15,15 +17,18 @@ import org.springframework.cloud.security.oauth2.ResourceServerProperties;
 import org.springframework.cloud.security.sso.OAuth2SsoConfigurerAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.OAuth2ClientContext;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
+import org.springframework.security.oauth2.client.token.AccessTokenRequest;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
-import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
@@ -65,13 +70,12 @@ public class ApplicationConfiguration {
 					.and()
 						.securityContext().securityContextRepository(securityContextRepository())
 					.and()
-						.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
+						.addFilter(oauth2ClientFilter)
 						.addFilterAfter(socialClientFilter, oauth2ClientFilter.getClass())
-						
 				.authorizeRequests()
 					.antMatchers("/service/item/**").hasRole("USER")
 					.and()
-						.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
+						.addFilter(oauth2ClientFilter)
 						.addFilterAfter(accessTokenFilter, oauth2ClientFilter.getClass())
 				.authorizeRequests()
 					.anyRequest().permitAll()
@@ -126,8 +130,12 @@ public class ApplicationConfiguration {
 	protected static class ServiceBeanConfiguration {
 		@Autowired
 		private ResourceServerProperties resource;
+		
+		@Autowired
+		private OAuth2ClientContext oauth2ClientContext;
 
 		@Bean
+		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
 		public ItemService itemService(@Value("${demoapp.url:http://localhost:8080}") String appUrl,
 				RestOperations restTemplate) {
 
@@ -139,6 +147,7 @@ public class ApplicationConfiguration {
 		}
 
 		@Bean
+		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
 		public ItemCompositeController itemCompositeController(ItemService service) {
 			ItemCompositeController controller = new ItemCompositeController();
 			controller.setItemService(service);
@@ -147,6 +156,7 @@ public class ApplicationConfiguration {
 		}
 
 		@Bean(name = "socialClientFilter")
+		@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 		public ClientAuthenticationFilter socialClientFilter(RestOperations restTemplate) {
 			SocialClientUserDetailsSource source = new SocialClientUserDetailsSource();
 			source.setRestTemplate(restTemplate);
@@ -159,6 +169,7 @@ public class ApplicationConfiguration {
 		}
 		
 		@Bean(name = "accessTokenFilter")
+		@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 		public ClientAuthenticationFilter accessTokenFilter(OAuth2RestTemplate restTemplate, OAuth2AuthenticationManager manager) {
 			OAuth2AccessTokenSource source = new OAuth2AccessTokenSource();
 			source.setRestTemplate(restTemplate);
@@ -190,6 +201,7 @@ public class ApplicationConfiguration {
 		}
 		
 		@Bean
+		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
 		public OAuth2RestTemplate restTemplate() {
 			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 			details.setAccessTokenUri(resource.getClient().getTokenUri());
