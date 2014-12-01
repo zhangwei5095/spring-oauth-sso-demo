@@ -3,7 +3,9 @@ package com.ecsteam.oauth2.sso.demo.configuration;
 import java.util.Arrays;
 
 import org.cloudfoundry.identity.uaa.client.ClientAuthenticationFilter;
+import org.cloudfoundry.identity.uaa.client.OAuth2AccessTokenSource;
 import org.cloudfoundry.identity.uaa.client.SocialClientUserDetailsSource;
+import org.cloudfoundry.identity.uaa.oauth.RemoteTokenServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,8 @@ import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetailsSource;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
 import org.springframework.web.client.RestOperations;
@@ -47,18 +51,29 @@ public class ApplicationConfiguration {
 		@Autowired
 		@Qualifier("socialClientFilter")
 		private ClientAuthenticationFilter socialClientFilter;
+		
+		@Autowired
+		@Qualifier("accessTokenFilter")
+		private ClientAuthenticationFilter accessTokenFilter;
 
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
 			http.authorizeRequests()
-				.antMatchers("/service/item/**", "/home").hasRole("USER")
-				.anyRequest().permitAll()
-			.and()
-				.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
-				.addFilterAfter(socialClientFilter, oauth2ClientFilter.getClass())
-			.logout()
-				.logoutUrl("/logout.do").permitAll();
+					.antMatchers("/home").hasRole("USER")
+					.and()
+						.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
+						.addFilterAfter(socialClientFilter, oauth2ClientFilter.getClass())
+				.authorizeRequests()
+					.antMatchers("/service/item/**").hasRole("USER")
+					.and()
+						.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
+						.addFilterAfter(accessTokenFilter, oauth2ClientFilter.getClass())
+				.authorizeRequests()
+					.anyRequest().permitAll()
+				.and()	
+					.logout()
+						.logoutUrl("/logout.do").permitAll();
 			// @formatter:on
 		}
 	}
@@ -100,10 +115,6 @@ public class ApplicationConfiguration {
 		@Autowired
 		private ResourceServerProperties resource;
 
-//		@Resource
-//		@Qualifier("accessTokenRequest")
-//		private AccessTokenRequest accessTokenRequest;
-
 		@Bean
 		public ItemService itemService(@Value("${demoapp.url:http://localhost:8080}") String appUrl,
 				RestOperations restTemplate) {
@@ -134,17 +145,47 @@ public class ApplicationConfiguration {
 
 			return filter;
 		}
+		
+		@Bean(name = "accessTokenFilter")
+		public ClientAuthenticationFilter accessTokenFilter(OAuth2RestTemplate restTemplate, OAuth2AuthenticationManager manager) {
+			OAuth2AccessTokenSource source = new OAuth2AccessTokenSource();
+			source.setRestTemplate(restTemplate);
+					
+			ClientAuthenticationFilter filter = new ClientAuthenticationFilter("/login");
+			filter.setPreAuthenticatedPrincipalSource(source);
+			filter.setAuthenticationManager(manager);
+			
+			return filter;
+		}
 
 		@Bean
-		public RestOperations restTemplate() {
+		public RemoteTokenServices remoteTokenServices() {
+			RemoteTokenServices rts = new RemoteTokenServices();
+			
+			rts.setCheckTokenEndpointUrl(resource.getTokenInfoUri());
+			rts.setClientId(resource.getClient().getClientId());
+			rts.setClientSecret(resource.getClient().getClientSecret());
+			
+			return rts;
+		}
+		
+		@Bean
+		public OAuth2AuthenticationManager oauth2AuthenticationManager(RemoteTokenServices remoteTokenServices) {
+			OAuth2AuthenticationManager oam = new OAuth2AuthenticationManager();
+			oam.setTokenServices(remoteTokenServices);
+			
+			return oam;
+		}
+		
+		@Bean
+		public OAuth2RestTemplate restTemplate() {
 			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 			details.setAccessTokenUri(resource.getClient().getTokenUri());
 			details.setId("uaa");
 			details.setClientId(resource.getClient().getClientId());
 			details.setClientSecret(resource.getClient().getClientSecret());
 			details.setUserAuthorizationUri(resource.getClient().getAuthorizationUri());
-
-			//OAuth2ClientContext oauth2ClientContext = new DefaultOAuth2ClientContext(accessTokenRequest);
+			details.setUseCurrentUri(true);
 			
 			return new OAuth2RestTemplate(details);
 		}
