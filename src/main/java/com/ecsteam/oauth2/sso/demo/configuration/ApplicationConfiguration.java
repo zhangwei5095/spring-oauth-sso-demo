@@ -18,11 +18,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.DefaultOAuth2ClientContext;
 import org.springframework.security.oauth2.client.OAuth2ClientContext;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
 import org.springframework.security.oauth2.client.token.AccessTokenRequest;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
+import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
@@ -48,9 +50,6 @@ public class ApplicationConfiguration {
 		@Autowired
 		private OAuth2ClientContextFilter oauth2ClientFilter;
 
-		// @Autowired
-		// private RestOperations restTemplate;
-		//
 		@Autowired
 		@Qualifier("socialClientFilter")
 		private ClientAuthenticationFilter socialClientFilter;
@@ -143,7 +142,7 @@ public class ApplicationConfiguration {
 		}
 
 		@Bean
-		public RestOperations restTemplate(OAuth2ClientContext oauth2ClientContext) {
+		public RestOperations restTemplate() {
 			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 			details.setAccessTokenUri(resource.getClient().getTokenUri());
 			details.setId("uaa");
@@ -151,6 +150,8 @@ public class ApplicationConfiguration {
 			details.setClientSecret(resource.getClient().getClientSecret());
 			details.setUserAuthorizationUri(resource.getClient().getAuthorizationUri());
 
+			OAuth2ClientContext oauth2ClientContext = new DefaultOAuth2ClientContext(accessTokenRequest);
+			
 			return new OAuth2RestTemplate(details, oauth2ClientContext);
 		}
 	}
