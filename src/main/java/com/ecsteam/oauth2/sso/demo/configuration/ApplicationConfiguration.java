@@ -2,15 +2,26 @@ package com.ecsteam.oauth2.sso.demo.configuration;
 
 import java.util.Arrays;
 
+import javax.annotation.Resource;
+
+import org.cloudfoundry.identity.uaa.client.ClientAuthenticationFilter;
+import org.cloudfoundry.identity.uaa.client.SocialClientUserDetailsSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.security.oauth2.OAuth2ClientProperties;
+import org.springframework.cloud.security.oauth2.ResourceServerProperties;
 import org.springframework.cloud.security.sso.OAuth2SsoConfigurerAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.OAuth2ClientContext;
+import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
+import org.springframework.security.oauth2.client.token.AccessTokenRequest;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
@@ -37,6 +48,13 @@ public class ApplicationConfiguration {
 		@Autowired
 		private OAuth2ClientContextFilter oauth2ClientFilter;
 
+		// @Autowired
+		// private RestOperations restTemplate;
+		//
+		@Autowired
+		@Qualifier("socialClientFilter")
+		private ClientAuthenticationFilter socialClientFilter;
+
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
@@ -45,22 +63,10 @@ public class ApplicationConfiguration {
 				.anyRequest().permitAll()
 			.and()
 				.addFilterAfter(oauth2ClientFilter, ExceptionTranslationFilter.class)
+				.addFilterAfter(socialClientFilter, oauth2ClientFilter.getClass())
 			.logout()
 				.logoutUrl("/logout.do").permitAll();
 			// @formatter:on
-		}
-		
-		@Bean
-		public AuthorizationCodeResourceDetails authorizationCodeResourceDetails() {
-			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
-			
-			details.setId("uaa");
-			details.setClientId("app");
-			details.setClientSecret("appclientsecret");
-			details.setAccessTokenUri("http://wv4-demo-login.cfapps.digitalglobe.com/oauth/token");
-			details.setUserAuthorizationUri("http://wv4-demo-login.cfapps.digitalglobe.com/oauth/authorize");
-			
-			return details;
 		}
 	}
 
@@ -96,7 +102,15 @@ public class ApplicationConfiguration {
 
 	@Configuration
 	@EnableOAuth2Client
+	@EnableConfigurationProperties({ OAuth2ClientProperties.class, ResourceServerProperties.class })
 	protected static class ServiceBeanConfiguration {
+		@Autowired
+		private ResourceServerProperties resource;
+
+		@Resource
+		@Qualifier("accessTokenRequest")
+		private AccessTokenRequest accessTokenRequest;
+
 		@Bean
 		public ItemService itemService(@Value("${demoapp.url:http://localhost:8080}") String appUrl,
 				RestOperations restTemplate) {
@@ -112,8 +126,32 @@ public class ApplicationConfiguration {
 		public ItemCompositeController itemCompositeController(ItemService service) {
 			ItemCompositeController controller = new ItemCompositeController();
 			controller.setItemService(service);
-			
+
 			return controller;
+		}
+
+		@Bean(name = "socialClientFilter")
+		public ClientAuthenticationFilter socialClientFilter(RestOperations restTemplate) {
+			SocialClientUserDetailsSource source = new SocialClientUserDetailsSource();
+			source.setRestTemplate(restTemplate);
+			source.setUserInfoUrl(resource.getUserInfoUri());
+
+			ClientAuthenticationFilter filter = new ClientAuthenticationFilter("/login");
+			filter.setPreAuthenticatedPrincipalSource(source);
+
+			return filter;
+		}
+
+		@Bean
+		public RestOperations restTemplate(OAuth2ClientContext oauth2ClientContext) {
+			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
+			details.setAccessTokenUri(resource.getClient().getTokenUri());
+			details.setId("uaa");
+			details.setClientId(resource.getClient().getClientId());
+			details.setClientSecret(resource.getClient().getClientSecret());
+			details.setUserAuthorizationUri(resource.getClient().getAuthorizationUri());
+
+			return new OAuth2RestTemplate(details, oauth2ClientContext);
 		}
 	}
 }
