@@ -2,8 +2,6 @@ package com.ecsteam.oauth2.sso.demo.configuration;
 
 import java.util.Arrays;
 
-import javax.annotation.Resource;
-
 import org.cloudfoundry.identity.uaa.client.ClientAuthenticationFilter;
 import org.cloudfoundry.identity.uaa.client.SocialClientUserDetailsSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,13 +16,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.oauth2.client.DefaultOAuth2ClientContext;
-import org.springframework.security.oauth2.client.OAuth2ClientContext;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
-import org.springframework.security.oauth2.client.token.AccessTokenRequest;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
-import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
@@ -106,9 +100,9 @@ public class ApplicationConfiguration {
 		@Autowired
 		private ResourceServerProperties resource;
 
-		@Resource
-		@Qualifier("accessTokenRequest")
-		private AccessTokenRequest accessTokenRequest;
+//		@Resource
+//		@Qualifier("accessTokenRequest")
+//		private AccessTokenRequest accessTokenRequest;
 
 		@Bean
 		public ItemService itemService(@Value("${demoapp.url:http://localhost:8080}") String appUrl,
@@ -150,9 +144,9 @@ public class ApplicationConfiguration {
 			details.setClientSecret(resource.getClient().getClientSecret());
 			details.setUserAuthorizationUri(resource.getClient().getAuthorizationUri());
 
-			OAuth2ClientContext oauth2ClientContext = new DefaultOAuth2ClientContext(accessTokenRequest);
+			//OAuth2ClientContext oauth2ClientContext = new DefaultOAuth2ClientContext(accessTokenRequest);
 			
-			return new OAuth2RestTemplate(details, oauth2ClientContext);
+			return new OAuth2RestTemplate(details);
 		}
 	}
 }
