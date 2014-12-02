@@ -45,7 +45,6 @@ import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
-import com.ecsteam.oauth2.sso.demo.controller.ItemCompositeController;
 import com.ecsteam.oauth2.sso.demo.service.ItemService;
 
 public class ApplicationConfiguration {
@@ -99,13 +98,13 @@ public class ApplicationConfiguration {
 		@Bean
 		@Order(0)
 		public ServletContextInitializer requestContextInitializer() {
-			System.out.println("************** JDG ******************** create ServletContextInitializer bean for RCL");
 			return new ServletContextInitializer() {
 				@Override
 				public void onStartup(ServletContext servletContext) throws ServletException {
 					RequestContextListener listener = new RequestContextListener();
 					
-					System.out.println("*********** JDG ***************** add RCL to the servlet context");
+					// use this version of the method as Embedded Tomcat seems to barf when passed Class-level args
+					// rather than instance-level
 					servletContext.addListener(listener);					
 				}
 			};
@@ -164,14 +163,14 @@ public class ApplicationConfiguration {
 			return service;
 		}
 
-		@Bean
-		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
-		public ItemCompositeController itemCompositeController(ItemService service) {
-			ItemCompositeController controller = new ItemCompositeController();
-			controller.setItemService(service);
-
-			return controller;
-		}
+//		@Bean
+//		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
+//		public ItemCompositeController itemCompositeController(ItemService service) {
+//			ItemCompositeController controller = new ItemCompositeController();
+//			controller.setItemService(service);
+//
+//			return controller;
+//		}
 
 		@Bean(name = "socialClientFilter")
 		public ClientAuthenticationFilter socialClientFilter(RestOperations restTemplate) {
