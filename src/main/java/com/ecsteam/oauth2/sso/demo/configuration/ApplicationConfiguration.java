@@ -172,7 +172,6 @@ public class ApplicationConfiguration {
 		}
 
 		@Bean(name = "socialClientFilter")
-		@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 		public ClientAuthenticationFilter socialClientFilter(RestOperations restTemplate) {
 			SocialClientUserDetailsSource source = new SocialClientUserDetailsSource();
 			source.setRestTemplate(restTemplate);
@@ -185,7 +184,6 @@ public class ApplicationConfiguration {
 		}
 		
 		@Bean(name = "accessTokenFilter")
-		@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 		public ClientAuthenticationFilter accessTokenFilter(OAuth2RestTemplate restTemplate, OAuth2AuthenticationManager manager) {
 			OAuth2AccessTokenSource source = new OAuth2AccessTokenSource();
 			source.setRestTemplate(restTemplate);
@@ -217,7 +215,7 @@ public class ApplicationConfiguration {
 		}
 		
 		@Bean
-		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
+//		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
 		public OAuth2RestTemplate restTemplate() {
 			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 			details.setAccessTokenUri(resource.getClient().getTokenUri());
@@ -227,7 +225,7 @@ public class ApplicationConfiguration {
 			details.setUserAuthorizationUri(resource.getClient().getAuthorizationUri());
 			details.setUseCurrentUri(true);
 			
-			return new OAuth2RestTemplate(details);
+			return new OAuth2RestTemplate(details, oauth2ClientContext);
 		}
 	}
 }
