@@ -97,7 +97,7 @@ public class ApplicationConfiguration {
 		}
 		
 		@Bean
-		@Order(0)
+		@Order(1)
 		public ServletContextInitializer requestContextInitializer() {
 			System.out.println("************** JDG ******************** create ServletContextInitializer bean for RCL");
 			return new ServletContextInitializer() {
