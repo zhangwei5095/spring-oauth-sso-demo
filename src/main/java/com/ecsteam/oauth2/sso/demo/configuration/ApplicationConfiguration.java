@@ -31,13 +31,11 @@ import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilt
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
-import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.context.request.RequestContextListener;
-import org.springframework.web.filter.RequestContextFilter;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
@@ -67,23 +65,18 @@ public class ApplicationConfiguration {
 		@Qualifier("accessTokenFilter")
 		private ClientAuthenticationFilter accessTokenFilter;
 		
-//		@Autowired
-//		@Qualifier("requestContextFilter")
-//		private RequestContextFilter requestContextFilter;
-
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
-			http//.addFilterAfter(requestContextFilter, ChannelProcessingFilter.class)
-				.authorizeRequests()
-					.antMatchers("/home").hasRole("USER")
+			http.authorizeRequests()
+					.antMatchers("/home").fullyAuthenticated()
 					.and()
 						.securityContext().securityContextRepository(securityContextRepository())
 					.and()
 						.addFilter(socialClientFilter)
 						.addFilterBefore(oauth2ClientFilter, socialClientFilter.getClass())
 				.authorizeRequests()
-					.antMatchers("/service/item/**").hasRole("USER")
+					.antMatchers("/service/item/**").fullyAuthenticated()
 					.and()
 						.addFilter(accessTokenFilter)
 						.addFilterAfter(oauth2ClientFilter, accessTokenFilter.getClass())
@@ -104,7 +97,7 @@ public class ApplicationConfiguration {
 		}
 		
 		@Bean
-		@Order(1)
+		@Order(0)
 		public ServletContextInitializer requestContextInitializer() {
 			System.out.println("************** JDG ******************** create ServletContextInitializer bean for RCL");
 			return new ServletContextInitializer() {
@@ -204,12 +197,6 @@ public class ApplicationConfiguration {
 			return filter;
 		}
 		
-//		@Bean(name = "requestContextFilter")
-//		public RequestContextFilter requestContextFilter() {
-//			RequestContextFilter filter = new RequestContextFilter();
-//			return filter;
-//		}
-
 		@Bean
 		public RemoteTokenServices remoteTokenServices() {
 			RemoteTokenServices rts = new RemoteTokenServices();
