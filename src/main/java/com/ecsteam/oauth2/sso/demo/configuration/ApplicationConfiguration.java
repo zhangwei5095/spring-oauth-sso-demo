@@ -31,11 +31,13 @@ import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilt
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
+import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.context.request.RequestContextListener;
+import org.springframework.web.filter.RequestContextFilter;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
@@ -64,11 +66,16 @@ public class ApplicationConfiguration {
 		@Autowired
 		@Qualifier("accessTokenFilter")
 		private ClientAuthenticationFilter accessTokenFilter;
+		
+		@Autowired
+		@Qualifier("requestContextFilter")
+		private RequestContextFilter requestContextFilter;
 
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
-			http.authorizeRequests()
+			http.addFilterAfter(requestContextFilter, ChannelProcessingFilter.class)
+				.authorizeRequests()
 					.antMatchers("/home").hasRole("USER")
 					.and()
 						.securityContext().securityContextRepository(securityContextRepository())
@@ -96,18 +103,18 @@ public class ApplicationConfiguration {
 			return repo;
 		}
 		
-		@Bean
-		@Order(1)
-		public ServletContextInitializer requestContextInitializer() {
-			System.out.println("************** JDG ******************** create ServletContextInitializer bean for RCL");
-			return new ServletContextInitializer() {
-				@Override
-				public void onStartup(ServletContext servletContext) throws ServletException {
-					System.out.println("*********** JDG ***************** add RCL to the servlet context");
-					servletContext.addListener(RequestContextListener.class);					
-				}
-			};
-		}
+//		@Bean
+//		@Order(1)
+//		public ServletContextInitializer requestContextInitializer() {
+//			System.out.println("************** JDG ******************** create ServletContextInitializer bean for RCL");
+//			return new ServletContextInitializer() {
+//				@Override
+//				public void onStartup(ServletContext servletContext) throws ServletException {
+//					System.out.println("*********** JDG ***************** add RCL to the servlet context");
+//					servletContext.addListener(RequestContextListener.class);					
+//				}
+//			};
+//		}
 	}
 
 	@Configuration
@@ -194,6 +201,12 @@ public class ApplicationConfiguration {
 			
 			return filter;
 		}
+		
+		@Bean(name = "requestContextFilter")
+		public RequestContextFilter requestContextFilter() {
+			RequestContextFilter filter = new RequestContextFilter();
+			return filter;
+		}
 
 		@Bean
 		public RemoteTokenServices remoteTokenServices() {
@@ -215,7 +228,6 @@ public class ApplicationConfiguration {
 		}
 		
 		@Bean
-//		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
 		public OAuth2RestTemplate restTemplate() {
 			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 			details.setAccessTokenUri(resource.getClient().getTokenUri());
