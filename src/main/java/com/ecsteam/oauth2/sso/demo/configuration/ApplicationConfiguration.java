@@ -11,7 +11,6 @@ import org.cloudfoundry.identity.uaa.client.SocialClientUserDetailsSource;
 import org.cloudfoundry.identity.uaa.oauth.RemoteTokenServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.embedded.ServletContextInitializer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.security.oauth2.OAuth2ClientProperties;
@@ -19,8 +18,6 @@ import org.springframework.cloud.security.oauth2.ResourceServerProperties;
 import org.springframework.cloud.security.sso.OAuth2SsoConfigurerAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,8 +41,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
-
-import com.ecsteam.oauth2.sso.demo.service.ItemService;
 
 public class ApplicationConfiguration {
 
@@ -151,17 +146,17 @@ public class ApplicationConfiguration {
 		@Autowired
 		private OAuth2ClientContext oauth2ClientContext;
 
-		@Bean
-		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
-		public ItemService itemService(@Value("${demoapp.url:http://localhost:8080}") String appUrl,
-				RestOperations restTemplate) {
-
-			ItemService service = new ItemService();
-			service.setBaseUri(appUrl);
-			service.setRestTemplate(restTemplate);
-
-			return service;
-		}
+//		@Bean
+//		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
+//		public ItemService itemService(@Value("${demoapp.url:http://localhost:8080}") String appUrl,
+//				RestOperations restTemplate) {
+//
+//			ItemService service = new ItemService();
+//			service.setBaseUri(appUrl);
+//			service.setRestTemplate(restTemplate);
+//
+//			return service;
+//		}
 
 //		@Bean
 //		@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
