@@ -2,6 +2,9 @@ package com.ecsteam.oauth2.sso.demo.configuration;
 
 import java.util.Arrays;
 
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
 import org.cloudfoundry.identity.uaa.client.ClientAuthenticationFilter;
 import org.cloudfoundry.identity.uaa.client.OAuth2AccessTokenSource;
 import org.cloudfoundry.identity.uaa.client.SocialClientUserDetailsSource;
@@ -9,6 +12,7 @@ import org.cloudfoundry.identity.uaa.oauth.RemoteTokenServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.embedded.ServletContextInitializer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.security.oauth2.OAuth2ClientProperties;
 import org.springframework.cloud.security.oauth2.ResourceServerProperties;
@@ -17,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -30,6 +35,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
 import org.springframework.web.client.RestOperations;
+import org.springframework.web.context.request.RequestContextListener;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
@@ -88,6 +94,19 @@ public class ApplicationConfiguration {
 			repo.setAllowSessionCreation(true);
 			
 			return repo;
+		}
+		
+		@Bean
+		@Order(0)
+		public ServletContextInitializer requestContextInitializer() {
+			System.out.println("************** JDG ******************** create ServletContextInitializer bean for RCL");
+			return new ServletContextInitializer() {
+				@Override
+				public void onStartup(ServletContext servletContext) throws ServletException {
+					System.out.println("*********** JDG ***************** add RCL to the servlet context");
+					servletContext.addListener(RequestContextListener.class);					
+				}
+			};
 		}
 	}
 
