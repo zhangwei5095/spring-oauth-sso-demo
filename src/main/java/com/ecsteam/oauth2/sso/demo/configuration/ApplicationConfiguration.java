@@ -2,8 +2,6 @@ package com.ecsteam.oauth2.sso.demo.configuration;
 
 import java.util.Arrays;
 
-import javax.annotation.Resource;
-
 import org.cloudfoundry.identity.uaa.client.ClientAuthenticationFilter;
 import org.cloudfoundry.identity.uaa.client.OAuth2AccessTokenSource;
 import org.cloudfoundry.identity.uaa.client.SocialClientUserDetailsSource;
@@ -25,7 +23,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.oauth2.client.OAuth2ClientContext;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
-import org.springframework.security.oauth2.client.token.AccessTokenRequest;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
