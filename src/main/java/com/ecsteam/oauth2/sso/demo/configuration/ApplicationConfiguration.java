@@ -67,14 +67,14 @@ public class ApplicationConfiguration {
 		@Qualifier("accessTokenFilter")
 		private ClientAuthenticationFilter accessTokenFilter;
 		
-		@Autowired
-		@Qualifier("requestContextFilter")
-		private RequestContextFilter requestContextFilter;
+//		@Autowired
+//		@Qualifier("requestContextFilter")
+//		private RequestContextFilter requestContextFilter;
 
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
-			http.addFilterAfter(requestContextFilter, ChannelProcessingFilter.class)
+			http//.addFilterAfter(requestContextFilter, ChannelProcessingFilter.class)
 				.authorizeRequests()
 					.antMatchers("/home").hasRole("USER")
 					.and()
@@ -103,18 +103,20 @@ public class ApplicationConfiguration {
 			return repo;
 		}
 		
-//		@Bean
-//		@Order(1)
-//		public ServletContextInitializer requestContextInitializer() {
-//			System.out.println("************** JDG ******************** create ServletContextInitializer bean for RCL");
-//			return new ServletContextInitializer() {
-//				@Override
-//				public void onStartup(ServletContext servletContext) throws ServletException {
-//					System.out.println("*********** JDG ***************** add RCL to the servlet context");
-//					servletContext.addListener(RequestContextListener.class);					
-//				}
-//			};
-//		}
+		@Bean
+		@Order(1)
+		public ServletContextInitializer requestContextInitializer() {
+			System.out.println("************** JDG ******************** create ServletContextInitializer bean for RCL");
+			return new ServletContextInitializer() {
+				@Override
+				public void onStartup(ServletContext servletContext) throws ServletException {
+					RequestContextListener listener = new RequestContextListener();
+					
+					System.out.println("*********** JDG ***************** add RCL to the servlet context");
+					servletContext.addListener(listener);					
+				}
+			};
+		}
 	}
 
 	@Configuration
@@ -202,11 +204,11 @@ public class ApplicationConfiguration {
 			return filter;
 		}
 		
-		@Bean(name = "requestContextFilter")
-		public RequestContextFilter requestContextFilter() {
-			RequestContextFilter filter = new RequestContextFilter();
-			return filter;
-		}
+//		@Bean(name = "requestContextFilter")
+//		public RequestContextFilter requestContextFilter() {
+//			RequestContextFilter filter = new RequestContextFilter();
+//			return filter;
+//		}
 
 		@Bean
 		public RemoteTokenServices remoteTokenServices() {
