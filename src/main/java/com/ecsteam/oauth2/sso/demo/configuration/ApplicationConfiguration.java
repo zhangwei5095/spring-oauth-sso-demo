@@ -110,12 +110,12 @@ public class ApplicationConfiguration {
 
 	@Configuration
 	@EnableWebMvc
-	@PropertySource(ignoreResourceNotFound = true, value = "classpath:/application.properties")
+//	@PropertySource(ignoreResourceNotFound = true, value = "classpath:/application.properties")
 	protected static class WebMvcConfiguration extends WebMvcConfigurerAdapter {
-		@Bean
-		public PropertyPlaceholderConfigurer propertyPlaceholderConfigurer() {
-			return new PropertyPlaceholderConfigurer();
-		}
+//		@Bean
+//		public PropertyPlaceholderConfigurer propertyPlaceholderConfigurer() {
+//			return new PropertyPlaceholderConfigurer();
+//		}
 		
 		@Bean
 		public ContentNegotiatingViewResolver contentViewResolver() throws Exception {
