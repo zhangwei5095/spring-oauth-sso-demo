@@ -6,6 +6,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -22,16 +23,24 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 			throws ServletException, IOException {
 		try {
 			String token = request.getHeader("Authorization");
-			if (token != null) {
-				System.out.println("Access token on request, saving " + token);
-				AccessTokenHolder.setToken(token);
+			
+			HttpSession session = request.getSession(false);
+			String sessionId = null;
+			if (session != null) {
+				sessionId = session.getId();
 			}
-			else if (restTemplate != null) {
+			
+			if (token != null && sessionId != null) {
+				System.out.println("Access token on request, saving " + token);
+				
+				AccessTokenHolder.setToken(token, sessionId);
+			}
+			else if (restTemplate != null && sessionId != null) {
 				System.out.println("Authorization header not present, fetching access token");
 				OAuth2AccessToken accessToken = restTemplate.getAccessToken();
 
 				if (accessToken != null) {
-					AccessTokenHolder.setToken("Bearer " + accessToken.getValue());
+					AccessTokenHolder.setToken("Bearer " + accessToken.getValue(), sessionId);
 				}
 			}
 			
