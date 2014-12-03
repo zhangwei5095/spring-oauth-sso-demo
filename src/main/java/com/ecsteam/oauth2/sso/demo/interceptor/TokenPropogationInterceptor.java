@@ -19,13 +19,15 @@ public class TokenPropogationInterceptor implements ClientHttpRequestInterceptor
 		if (authHeader != null) {
 			System.out.println("Adding authorization header to request: " + authHeader);
 			request.getHeaders().add("Authorization", authHeader);
-			
-			System.out.println("Adding session id cookie");
-			request.getHeaders().add("Cookie", String.format("%s=%s", AccessTokenHolder.getSessionIdName(), AccessTokenHolder.getSessionId()));
-					
-			
-			
-		} else {
+
+			String sessionCookie = String.format("%s=%s", AccessTokenHolder.getSessionIdName(),
+					AccessTokenHolder.getSessionId());
+
+			System.out.println("Adding session id cookie: " + sessionCookie);
+			request.getHeaders().add("Cookie", sessionCookie);
+
+		}
+		else {
 			System.out.println("Token not present!");
 		}
 
