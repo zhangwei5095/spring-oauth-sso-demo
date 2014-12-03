@@ -1,6 +1,8 @@
 package com.ecsteam.oauth2.sso.demo.configuration;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -22,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.OAuth2ClientContext;
@@ -30,6 +33,7 @@ import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilt
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
+import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
@@ -43,6 +47,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
+
+import com.ecsteam.oauth2.sso.demo.filter.PropogatingAuthorizationFilter;
+import com.ecsteam.oauth2.sso.demo.interceptor.TokenPropogationInterceptor;
 
 public class ApplicationConfiguration {
 
@@ -64,7 +71,8 @@ public class ApplicationConfiguration {
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
-			http.authorizeRequests()
+			http.addFilterAfter(new PropogatingAuthorizationFilter(), ChannelProcessingFilter.class)				
+				.authorizeRequests()
 					.antMatchers("/home").fullyAuthenticated()
 					.and()
 						.securityContext().securityContextRepository(securityContextRepository())
@@ -110,12 +118,7 @@ public class ApplicationConfiguration {
 
 	@Configuration
 	@EnableWebMvc
-//	@PropertySource(ignoreResourceNotFound = true, value = "classpath:/application.properties")
 	protected static class WebMvcConfiguration extends WebMvcConfigurerAdapter {
-//		@Bean
-//		public PropertyPlaceholderConfigurer propertyPlaceholderConfigurer() {
-//			return new PropertyPlaceholderConfigurer();
-//		}
 		
 		@Bean
 		public ContentNegotiatingViewResolver contentViewResolver() throws Exception {
@@ -207,7 +210,13 @@ public class ApplicationConfiguration {
 			details.setUserAuthorizationUri(resource.getClient().getAuthorizationUri());
 			details.setUseCurrentUri(true);
 			
-			return new OAuth2RestTemplate(details, oauth2ClientContext);
+			List<ClientHttpRequestInterceptor> interceptors = new ArrayList<ClientHttpRequestInterceptor>();
+			interceptors.add(new TokenPropogationInterceptor());
+			
+			OAuth2RestTemplate template = new OAuth2RestTemplate(details, oauth2ClientContext);
+			template.setInterceptors(interceptors);
+			
+			return template;
 		}
 	}
 }
