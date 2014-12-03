@@ -17,8 +17,11 @@ public class TokenPropogationInterceptor implements ClientHttpRequestInterceptor
 
 		String authHeader = AccessTokenHolder.getToken();
 		if (authHeader != null) {
+			System.out.println("Adding authorization header to request: " + authHeader);
 			request.getHeaders().add("Authorization", authHeader);
-		} 
+		} else {
+			System.out.println("Token not present!");
+		}
 
 		return execution.execute(request, body);
 	}

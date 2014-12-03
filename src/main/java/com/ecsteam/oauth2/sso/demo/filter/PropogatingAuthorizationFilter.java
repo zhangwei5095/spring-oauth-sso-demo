@@ -23,6 +23,7 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 		try {
 			String token = request.getHeader("Authorization");
 			if (token != null) {
+				System.out.println("Access token on request, saving " + token);
 				AccessTokenHolder.setToken(token);
 			}
 			else if (restTemplate != null) {
@@ -30,15 +31,10 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 				OAuth2AccessToken accessToken = restTemplate.getAccessToken();
 
 				if (accessToken != null) {
-					System.out.println("Access token fetched, value " + accessToken.getValue());
-					AccessTokenHolder.setToken(accessToken.getValue());
+					AccessTokenHolder.setToken("Bearer " + accessToken.getValue());
 				}
 			}
-			else {
-				// TODO: hitting this, better listen to the debug statement, it means business
-				System.out.println("restTemplate is null, fix your stupid code!");
-			}
-
+			
 			chain.doFilter(request, response);
 		}
 		catch (ServletException e) {
