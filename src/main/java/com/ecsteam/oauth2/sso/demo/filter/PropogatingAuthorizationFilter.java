@@ -28,7 +28,11 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 			else if (restTemplate != null) {
 				System.out.println("Authorization header not present, fetching access token");
 				OAuth2AccessToken accessToken = restTemplate.getAccessToken();
-				AccessTokenHolder.setToken(accessToken.getValue());
+
+				if (accessToken != null) {
+					System.out.println("Access token fetched, value " + accessToken.getValue());
+					AccessTokenHolder.setToken(accessToken.getValue());
+				}
 			}
 			else {
 				// TODO: hitting this, better listen to the debug statement, it means business
@@ -50,7 +54,7 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 			AccessTokenHolder.reset();
 		}
 	}
-	
+
 	public void setRestTemplate(OAuth2RestTemplate restTemplate) {
 		this.restTemplate = restTemplate;
 	}
