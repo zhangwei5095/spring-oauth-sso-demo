@@ -31,6 +31,9 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 				OAuth2AccessToken accessToken = restTemplate.getAccessToken();
 				AccessTokenHolder.setToken(accessToken.getValue());
 			}
+			else {
+				System.out.println("restTemplate is null, fix the autowiring!");
+			}
 
 			chain.doFilter(request, response);
 		}
