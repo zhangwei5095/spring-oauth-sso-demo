@@ -15,10 +15,10 @@ public class TokenPropogationInterceptor implements ClientHttpRequestInterceptor
 	public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
 			throws IOException {
 
-		String authHeader = AccessTokenHolder.get();
+		String authHeader = AccessTokenHolder.getToken();
 		if (authHeader != null) {
 			request.getHeaders().add("Authorization", authHeader);
-		}
+		} 
 
 		return execution.execute(request, body);
 	}
