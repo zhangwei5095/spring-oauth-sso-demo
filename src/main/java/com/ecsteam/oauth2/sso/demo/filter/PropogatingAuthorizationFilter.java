@@ -30,6 +30,8 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 				sessionId = session.getId();
 			}
 			
+			System.out.println("Session ID: " + sessionId);
+			
 			if (token != null && sessionId != null) {
 				System.out.println("Access token on request, saving " + token);
 				
