@@ -68,10 +68,14 @@ public class ApplicationConfiguration {
 		@Qualifier("accessTokenFilter")
 		private ClientAuthenticationFilter accessTokenFilter;
 		
+		@Autowired
+		@Qualifier("propogatingAuthzFilter")
+		private PropogatingAuthorizationFilter propogatingAuthzFilter;
+		
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
-			http.addFilterAfter(new PropogatingAuthorizationFilter(), ChannelProcessingFilter.class)				
+			http.addFilterAfter(propogatingAuthzFilter, ChannelProcessingFilter.class)				
 				.authorizeRequests()
 					.antMatchers("/home").fullyAuthenticated()
 					.and()
@@ -177,6 +181,14 @@ public class ApplicationConfiguration {
 			ClientAuthenticationFilter filter = new ClientAuthenticationFilter("/login");
 			filter.setPreAuthenticatedPrincipalSource(source);
 			filter.setAuthenticationManager(manager);
+			
+			return filter;
+		}
+		
+		@Bean(name = "propogatingAuthzFilter")
+		public PropogatingAuthorizationFilter propogatingAuthzFilter(OAuth2RestTemplate restTemplate) {
+			PropogatingAuthorizationFilter filter = new PropogatingAuthorizationFilter();
+			filter.setRestTemplate(restTemplate);
 			
 			return filter;
 		}
