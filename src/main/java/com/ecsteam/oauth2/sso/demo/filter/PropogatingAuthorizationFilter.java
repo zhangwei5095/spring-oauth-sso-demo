@@ -9,6 +9,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -18,10 +20,16 @@ import com.ecsteam.oauth2.sso.demo.service.AccessTokenHolder;
 public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 
 	private OAuth2RestTemplate restTemplate;
+	
+	private static final Log log = LogFactory.getLog(PropogatingAuthorizationFilter.class);
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws ServletException, IOException {
+		final String method = "doFilterInternal";
+		
+		log.info("ENTER " + method);
+		
 		try {
 			String token = request.getHeader("Authorization");
 			
@@ -31,25 +39,25 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 				sessionId = session.getId();
 			}
 			
-			System.out.println("Session ID: " + sessionId);
-			System.out.println("Cookies Header: " + request.getHeader("Cookie"));
+			log.info("Session ID: " + sessionId);
+			log.info("Cookies Header: " + request.getHeader("Cookie"));
 			
 			Cookie[] cookies = request.getCookies();
 			if (cookies != null) {
 				for (Cookie cookie : cookies) {
-					System.out.println(String.format("Cookie %s has value %s\n", cookie.getName(), cookie.getValue()));
+					log.info(String.format("Cookie %s has value %s\n", cookie.getName(), cookie.getValue()));
 				}
 			} else {
-				System.out.println("null cookies");
+				log.info("null cookies");
 			}
 			
 			if (token != null && sessionId != null) {
-				System.out.println("Access token on request, saving " + token);
+				log.info("Access token on request, saving " + token);
 				
 				AccessTokenHolder.setToken(token, sessionId);
 			}
 			else if (restTemplate != null && sessionId != null) {
-				System.out.println("Authorization header not present, fetching access token");
+				log.info("Authorization header not present, fetching access token");
 				OAuth2AccessToken accessToken = restTemplate.getAccessToken();
 
 				if (accessToken != null) {
@@ -70,6 +78,7 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 		}
 		finally {
 			AccessTokenHolder.reset();
+			log.info("EXIT " + method);
 		}
 	}
 
