@@ -13,7 +13,6 @@ import org.cloudfoundry.identity.uaa.client.SocialClientUserDetailsSource;
 import org.cloudfoundry.identity.uaa.oauth.RemoteTokenServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.boot.context.embedded.ServletContextInitializer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.security.oauth2.OAuth2ClientProperties;
@@ -21,7 +20,6 @@ import org.springframework.cloud.security.oauth2.ResourceServerProperties;
 import org.springframework.cloud.security.sso.OAuth2SsoConfigurerAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -33,7 +31,6 @@ import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilt
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
-import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
@@ -48,7 +45,7 @@ import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
-import com.ecsteam.oauth2.sso.demo.filter.PropogatingAuthorizationFilter;
+import com.ecsteam.oauth2.sso.demo.filter.AuthorizationPropagationListener;
 import com.ecsteam.oauth2.sso.demo.interceptor.TokenPropogationInterceptor;
 
 public class ApplicationConfiguration {
@@ -68,14 +65,14 @@ public class ApplicationConfiguration {
 		@Qualifier("accessTokenFilter")
 		private ClientAuthenticationFilter accessTokenFilter;
 		
-		@Autowired
-		@Qualifier("propogatingAuthzFilter")
-		private PropogatingAuthorizationFilter propogatingAuthzFilter;
-		
+//		@Autowired
+//		@Qualifier("propogatingAuthzFilter")
+//		private PropogatingAuthorizationFilter propogatingAuthzFilter;
+//		
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
-			http.addFilterAfter(propogatingAuthzFilter, ChannelProcessingFilter.class)				
+			http//.addFilterAfter(propogatingAuthzFilter, ChannelProcessingFilter.class)				
 				.authorizeRequests()
 					.antMatchers("/home").fullyAuthenticated()
 					.and()
@@ -115,6 +112,19 @@ public class ApplicationConfiguration {
 					// use this version of the method as Embedded Tomcat seems to barf when passed Class-level args
 					// rather than instance-level
 					servletContext.addListener(listener);					
+				}
+			};
+		}
+		
+		@Bean
+		public ServletContextInitializer authzPropInitializer(final OAuth2RestTemplate template) {
+			return new ServletContextInitializer() {
+				@Override
+				public void onStartup(ServletContext servletContext) throws ServletException {
+					AuthorizationPropagationListener listener = new AuthorizationPropagationListener();
+					listener.setRestTemplate(template);
+					
+					servletContext.addListener(listener);
 				}
 			};
 		}
@@ -185,13 +195,13 @@ public class ApplicationConfiguration {
 			return filter;
 		}
 		
-		@Bean(name = "propogatingAuthzFilter")
-		public PropogatingAuthorizationFilter propogatingAuthzFilter(OAuth2RestTemplate restTemplate) {
-			PropogatingAuthorizationFilter filter = new PropogatingAuthorizationFilter();
-			filter.setRestTemplate(restTemplate);
-			
-			return filter;
-		}
+//		@Bean(name = "propogatingAuthzFilter")
+//		public PropogatingAuthorizationFilter propogatingAuthzFilter(OAuth2RestTemplate restTemplate) {
+//			PropogatingAuthorizationFilter filter = new PropogatingAuthorizationFilter();
+//			filter.setRestTemplate(restTemplate);
+//			
+//			return filter;
+//		}
 		
 		@Bean
 		public RemoteTokenServices remoteTokenServices() {
