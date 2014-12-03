@@ -47,6 +47,8 @@ public class AccessTokenHolder {
 		AccessToken accessToken = new AccessToken();
 		accessToken.setToken(token);
 		accessToken.setSessionId(sessionId);
+		
+		local.set(accessToken);
 	}
 	
 	public static void setSessionIdName(String sessionIdName) {
