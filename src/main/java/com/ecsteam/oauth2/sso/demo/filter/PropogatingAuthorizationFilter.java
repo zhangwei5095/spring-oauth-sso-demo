@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -31,6 +32,16 @@ public class PropogatingAuthorizationFilter extends OncePerRequestFilter {
 			}
 			
 			System.out.println("Session ID: " + sessionId);
+			System.out.println("Cookies Header: " + request.getHeader("Cookie"));
+			
+			Cookie[] cookies = request.getCookies();
+			if (cookies != null) {
+				for (Cookie cookie : cookies) {
+					System.out.println(String.format("Cookie %s has value %s\n", cookie.getName(), cookie.getValue()));
+				}
+			} else {
+				System.out.println("null cookies");
+			}
 			
 			if (token != null && sessionId != null) {
 				System.out.println("Access token on request, saving " + token);
