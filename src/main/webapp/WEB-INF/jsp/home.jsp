@@ -55,7 +55,7 @@
 			<tr>
 				<td colspan="3" style="text-align:center">Please enter an ID above and click "Search"</td>
 			</tr>
-			</c:otherwise>s
+			</c:otherwise>
 			</c:choose>
 		</tbody>
 	</table>
