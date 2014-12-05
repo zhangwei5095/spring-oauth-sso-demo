@@ -31,8 +31,7 @@ import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilt
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.context.request.RequestContextListener;
@@ -45,38 +44,58 @@ import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
-import com.ecsteam.oauth2.sso.demo.filter.AuthorizationPropagationListener;
-import com.ecsteam.oauth2.sso.demo.interceptor.TokenPropogationInterceptor;
+import com.ecsteam.oauth2.sso.demo.filter.SessionCreationFilter;
+import com.ecsteam.oauth2.sso.demo.interceptor.CookiePropagationInterceptor;
+import com.ecsteam.oauth2.sso.demo.interceptor.TokenPropagationInterceptor;
+import com.ecsteam.oauth2.sso.demo.listener.CookiePropagationListener;
 
+/**
+ * This class provides all necessary spring configuration to show endpoints, and tie them in with a remote OAuth2 Server
+ * 
+ * @author Josh Ghiloni
+ *
+ */
 public class ApplicationConfiguration {
 
+	/**
+	 * This class secures endpoints, and sets the necessary filter chains to handle redirects to the OAuth server for
+	 * login and token assignment
+	 * 
+	 * @author Josh Ghiloni
+	 */
 	@Configuration
 	@EnableWebSecurity
 	protected static class WebSecurityConfiguration extends OAuth2SsoConfigurerAdapter {
-
-		@Autowired
-		private OAuth2ClientContextFilter oauth2ClientFilter;
-
+		/**
+		 * This filter is to check user info for authentication info
+		 */
 		@Autowired
 		@Qualifier("socialClientFilter")
 		private ClientAuthenticationFilter socialClientFilter;
-		
+
+		/**
+		 * This filter is used on backend endpoints
+		 */
 		@Autowired
 		@Qualifier("accessTokenFilter")
 		private ClientAuthenticationFilter accessTokenFilter;
-		
-//		@Autowired
-//		@Qualifier("propogatingAuthzFilter")
-//		private PropogatingAuthorizationFilter propogatingAuthzFilter;
-//		
+
+		/**
+		 * This filter redirects users if they are not authenticated, and should be injected into the filter chain
+		 * immediately after the ClientAuthenticationFilter. For this example, all points have this filter, but in
+		 * general, services that do not interact directly with users should not use it, and access should simply be
+		 * denied to those who do not have an appropriate token.
+		 */
+		@Autowired
+		private OAuth2ClientContextFilter oauth2ClientFilter;
+
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			// @formatter:off
-			http//.addFilterAfter(propogatingAuthzFilter, ChannelProcessingFilter.class)				
+			http.authorizeRequests().antMatchers("/favicon.ico", "/resources/**").anonymous();
+			http.addFilterBefore(new SessionCreationFilter(), ExceptionTranslationFilter.class)				
 				.authorizeRequests()
 					.antMatchers("/home").fullyAuthenticated()
-					.and()
-						.securityContext().securityContextRepository(securityContextRepository())
 					.and()
 						.addFilter(socialClientFilter)
 						.addFilterBefore(oauth2ClientFilter, socialClientFilter.getClass())
@@ -92,48 +111,18 @@ public class ApplicationConfiguration {
 						.logoutUrl("/logout.do").permitAll();
 			// @formatter:on
 		}
-		
-		private SecurityContextRepository securityContextRepository() {
-			HttpSessionSecurityContextRepository repo = new HttpSessionSecurityContextRepository();
-			repo.setSpringSecurityContextKey("SOCIAL_SPRING_SECURITY_CONTEXT");
-			repo.setAllowSessionCreation(true);
-			
-			return repo;
-		}
-		
-		@Bean
-		@Order(0)
-		public ServletContextInitializer requestContextInitializer() {
-			return new ServletContextInitializer() {
-				@Override
-				public void onStartup(ServletContext servletContext) throws ServletException {
-					RequestContextListener listener = new RequestContextListener();
-					
-					// use this version of the method as Embedded Tomcat seems to barf when passed Class-level args
-					// rather than instance-level
-					servletContext.addListener(listener);					
-				}
-			};
-		}
-		
-		@Bean
-		public ServletContextInitializer authzPropInitializer(final OAuth2RestTemplate template) {
-			return new ServletContextInitializer() {
-				@Override
-				public void onStartup(ServletContext servletContext) throws ServletException {
-					AuthorizationPropagationListener listener = new AuthorizationPropagationListener();
-					listener.setRestTemplate(template);
-					
-					servletContext.addListener(listener);
-				}
-			};
-		}
 	}
 
+	/**
+	 * This class sets up operations for this set of service, and is not related to the OAuth2 security of the class
+	 * 
+	 * @author Josh Ghiloni
+	 *
+	 */
 	@Configuration
 	@EnableWebMvc
 	protected static class WebMvcConfiguration extends WebMvcConfigurerAdapter {
-		
+
 		@Bean
 		public ContentNegotiatingViewResolver contentViewResolver() throws Exception {
 			ContentNegotiationManagerFactoryBean contentNegotiationManager = new ContentNegotiationManagerFactoryBean();
@@ -161,16 +150,31 @@ public class ApplicationConfiguration {
 		}
 	}
 
+	/**
+	 * This class generates all OAuth2-related beans to be used by other configurations or components.
+	 * 
+	 * Note that the EnableOAuth2Client annotation should only be added to those apps that interact with the user
+	 * directly.
+	 * 
+	 * @author Josh Ghiloni
+	 *
+	 */
 	@Configuration
 	@EnableOAuth2Client
 	@EnableConfigurationProperties({ OAuth2ClientProperties.class, ResourceServerProperties.class })
 	protected static class ServiceBeanConfiguration {
 		@Autowired
 		private ResourceServerProperties resource;
-		
+
 		@Autowired
 		private OAuth2ClientContext oauth2ClientContext;
 
+		/**
+		 * Set up the socialClientFilter bean to find the user info URL
+		 * 
+		 * @param restTemplate The RestTemplate object used to make the remote calls behind the scenes
+		 * @return the bean
+		 */
 		@Bean(name = "socialClientFilter")
 		public ClientAuthenticationFilter socialClientFilter(RestOperations restTemplate) {
 			SocialClientUserDetailsSource source = new SocialClientUserDetailsSource();
@@ -182,62 +186,111 @@ public class ApplicationConfiguration {
 
 			return filter;
 		}
-		
+
+		/**
+		 * Set up the accessTokenFilter to be able to fetch access tokens for authenticated users
+		 * 
+		 * @param restTemplate The RestTemplate object used to make the remote calls behind the scenes
+		 * @param manager
+		 * @return the bean
+		 */
 		@Bean(name = "accessTokenFilter")
-		public ClientAuthenticationFilter accessTokenFilter(OAuth2RestTemplate restTemplate, OAuth2AuthenticationManager manager) {
+		public ClientAuthenticationFilter accessTokenFilter(OAuth2RestTemplate restTemplate,
+				OAuth2AuthenticationManager manager) {
 			OAuth2AccessTokenSource source = new OAuth2AccessTokenSource();
 			source.setRestTemplate(restTemplate);
-					
+
 			ClientAuthenticationFilter filter = new ClientAuthenticationFilter("/login");
 			filter.setPreAuthenticatedPrincipalSource(source);
 			filter.setAuthenticationManager(manager);
-			
+
 			return filter;
 		}
-		
-//		@Bean(name = "propogatingAuthzFilter")
-//		public PropogatingAuthorizationFilter propogatingAuthzFilter(OAuth2RestTemplate restTemplate) {
-//			PropogatingAuthorizationFilter filter = new PropogatingAuthorizationFilter();
-//			filter.setRestTemplate(restTemplate);
-//			
-//			return filter;
-//		}
-		
+
+		/**
+		 * Create a ServletContextInitializer bean used by Spring to add information to the servlet context. This is
+		 * used in place of the &lt;listener&gt;...&lt;/listener&gt; elements of web.xml.
+		 * 
+		 * <b>Note</b>: This bean must be created as early as possible, hence the Order(0) annotation. The
+		 * RequestContextListener instance adds request information to the current thread, allowing for session- and
+		 * request-scoped beans to be created, which is necessary for OAuth2 to function properly.
+		 * 
+		 * @return
+		 */
+		@Bean
+		@Order(0)
+		public ServletContextInitializer authzPropInitializer() {
+			return new ServletContextInitializer() {
+				@Override
+				public void onStartup(ServletContext servletContext) throws ServletException {
+					/*
+					 * 
+					 * There are three method signatures for addListener that shoud -- theoretically -- work identically
+					 * to a consumer of the API. However, there is an issue with the embedded Tomcat used by Spring Boot
+					 * and Cloud Foundry that cause an issue if you pass the Class object or its name, and your service
+					 * will fail to start. For now, just use the instance-based signature which bypasses the affected
+					 * code
+					 */
+					servletContext.addListener(new RequestContextListener());
+					servletContext.addListener(new CookiePropagationListener());
+				}
+			};
+		}
+
+		/**
+		 * Create a token services bean with info about the remote OAuth Server
+		 * @return
+		 */
 		@Bean
 		public RemoteTokenServices remoteTokenServices() {
 			RemoteTokenServices rts = new RemoteTokenServices();
-			
+
 			rts.setCheckTokenEndpointUrl(resource.getTokenInfoUri());
 			rts.setClientId(resource.getClient().getClientId());
 			rts.setClientSecret(resource.getClient().getClientSecret());
-			
+
 			return rts;
 		}
-		
+
+		/**
+		 * Create an authentication manager that uses the remote OAuth Server. Used by the accessTokenServer
+		 * 
+		 * @param remoteTokenServices the RemoteTokenServices bean
+		 * @return
+		 */
 		@Bean
 		public OAuth2AuthenticationManager oauth2AuthenticationManager(RemoteTokenServices remoteTokenServices) {
 			OAuth2AuthenticationManager oam = new OAuth2AuthenticationManager();
 			oam.setTokenServices(remoteTokenServices);
-			
+
 			return oam;
 		}
-		
+
+		/**
+		 * Create a RestTemplate bean with information about the OAuth2 client, OAuth2 server, and custom interceptors
+		 * to ensure that the current OAuth2 access token and cookies -- including the session id which is necessary for
+		 * our implementation -- are persisted to any calls made by this application
+		 *
+		 * @return
+		 */
 		@Bean
 		public OAuth2RestTemplate restTemplate() {
 			AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 			details.setAccessTokenUri(resource.getClient().getTokenUri());
-			details.setId("uaa");
+			details.setId(resource.getId());
 			details.setClientId(resource.getClient().getClientId());
 			details.setClientSecret(resource.getClient().getClientSecret());
 			details.setUserAuthorizationUri(resource.getClient().getAuthorizationUri());
 			details.setUseCurrentUri(true);
-			
-			List<ClientHttpRequestInterceptor> interceptors = new ArrayList<ClientHttpRequestInterceptor>();
-			interceptors.add(new TokenPropogationInterceptor());
-			
+
 			OAuth2RestTemplate template = new OAuth2RestTemplate(details, oauth2ClientContext);
+
+			List<ClientHttpRequestInterceptor> interceptors = new ArrayList<ClientHttpRequestInterceptor>();
+			interceptors.add(new TokenPropagationInterceptor(template));
+			interceptors.add(new CookiePropagationInterceptor());
+
 			template.setInterceptors(interceptors);
-			
+
 			return template;
 		}
 	}

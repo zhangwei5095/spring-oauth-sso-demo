@@ -5,6 +5,11 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * The Spring Boot main entry point for the application
+ * 
+ * @author Josh Ghiloni
+ */
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration

@@ -5,9 +5,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestOperations;
 
+import com.ecsteam.oauth2.sso.demo.model.Item;
 import com.ecsteam.oauth2.sso.demo.model.ItemDescription;
 import com.ecsteam.oauth2.sso.demo.model.ItemPrice;
 
+/**
+ * A service class that controllers can delegate to for making service-to-service calls. 
+ * 
+ * @author Josh Ghiloni
+ */
 @Service
 public class ItemService {
 	@Autowired
@@ -15,10 +21,13 @@ public class ItemService {
 
 	@Value("${demoapp.url:http://localhost:8080}")
 	private String baseUri;
+	
+	public Item getItem(String itemId) {
+		final String pattern = "{baseUri}/service/item/byId/{itemId}";
+		return restTemplate.getForObject(pattern, Item.class, baseUri, itemId);
+	}
 
 	public double getItemPrice(String itemId) {
-		System.out.println(baseUri);
-		
 		final String pattern = "{baseUri}/service/item/price/{itemId}";
 		
 		ItemPrice price = restTemplate.getForObject(pattern, ItemPrice.class, baseUri, itemId);

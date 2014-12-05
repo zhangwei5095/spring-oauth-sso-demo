@@ -27,9 +27,11 @@
 	<h1>Client Authentication Sample</h1>
 
 	<div id="content">
+		<form method="POST">
 		<p>Search for a random string ID below:</p>
 		<input id="item_id" type="text" />
-		<button type="button" id="search">Search</button>
+		<button type="submit" id="search">Search</button>
+		</form>
 	</div>
 	
 	<table>
@@ -41,82 +43,24 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr id="expl">
-				<td colspan="3" style="text-align:center">Enter an ID above and see what happens!</td>
-			</tr>
-			<tr id="inflight">
-				<td colspan="3" style="text-align:center">Searching...</td>
-			</tr>
-			<tr id="error">
-				<td colspan="3" style="text-align:center">There was an error: <span id="message"></span></td>
-			</tr>
+			<c:choose>
+			<c:when test="${not empty item}">
 			<tr id="results">
-				<td id="resid"></td>
-				<td id="resdesc"></td>
-				<td id="resprice"></td>
+				<td id="resid">${item.id}</td>
+				<td id="resdesc">${item.description}</td>
+				<td id="resprice">${item.price}</td>
 			</tr>
+			</c:when>
+			<c:otherwise>
+			<tr>
+				<td colspan="3" style="text-align:center">Please enter an ID above and click "Search"</td>
+			</tr>
+			</c:otherwise>s
+			</c:choose>
 		</tbody>
 	</table>
 <ul>
-<li><a href="apps">Apps</a></li>
 <li><a href="j_spring_security_logout">Logout</a></li>
-<li><a href="<c:url value="/"/>">Home</a></li>
 </ul>
-<script type="text/javascript">
-	$(function() {
-		$('#expl').show();
-		$('#inflight').hide();
-		$('#results').hide();
-		$('#error').hide();
-		
-		// Add configuration for one or more providers.
-		jso_configure({
-			"uaa": {
-				client_id: "${clientId}",
-				redirect_uri: window.location,
-				authorization: "${userAuthorizationUri}",
-			}
-		});
-
-		$('#search').click(function() {
-			$('#expl').hide();
-			$('#results').hide();
-			$('#inflight').show();
-			$('#error').hide();
-			
-			var id = $('#item_id').val();
-			
-			$.oajax({
-				url: '/service/item/byId/' + id,
-				jso_provider: 'uaa',
-				jso_allowia: true,
-				jso_scopes: ['openid', 'cloud_controller.read'],
-				dataType: 'json',
-				success: function(data) {
-					$('#resid').text(data.id);
-					$('#resdesc').text(data.description);
-					$('#resprice').text(data.price);
-					
-					$('#expl').hide();
-					$('#error').hide();
-					$('#inflight').hide();
-					$('#results').show();
-				},
-				error: function(xhr,text) {
-					$('#expl').hide();
-					$('#error').show();
-					$('#inflight').hide();
-					$('#results').hide();
-					
-					$('#message').text(text);
-				}
-			});
-			
-			jso_dump();
-			jso_wipe();
-		});
-	});
-</script>
-
 </body>
 </html>

@@ -7,6 +7,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ecsteam.oauth2.sso.demo.model.ItemPrice;
 
+/** 
+ * Trivial example of an oauth2-protected resource.
+ * 
+ * @author Josh Ghiloni
+ *
+ */
 @RestController
 @EnableOAuth2Resource
 public class PriceController {

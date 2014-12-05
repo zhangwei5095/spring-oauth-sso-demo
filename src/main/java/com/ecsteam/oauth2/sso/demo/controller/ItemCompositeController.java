@@ -9,18 +9,16 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ecsteam.oauth2.sso.demo.model.Item;
 import com.ecsteam.oauth2.sso.demo.service.ItemService;
 
+/**
+ * Example of an OAuth2-protected resource that calls other resources. 
+ * @author Josh Ghiloni
+ *
+ */
 @RestController
 @EnableOAuth2Resource
 public class ItemCompositeController {
 	@Autowired
 	private ItemService service;
-
-	public ItemCompositeController() {
-	}
-
-	public void setItemService(ItemService service) {
-		this.service = service;
-	}
 
 	@RequestMapping("/service/item/byId/{id}")
 	public Item getItem(@PathVariable("id") String id) {

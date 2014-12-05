@@ -2,6 +2,12 @@ package com.ecsteam.oauth2.sso.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * A simple pojo model used by service calls
+ * 
+ * @author Josh Ghiloni
+ *
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ItemPrice {
 	private String id;
